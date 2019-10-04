@@ -31,7 +31,8 @@ static UIImageView *imageView;
 - (void)onAppWillResignActive:(UIApplication *)application
 {
   CDVViewController *vc = (CDVViewController*)self.viewController;
-  NSString *imgName = [self getImageName:self.viewController.interfaceOrientation delegate:(id<CDVScreenOrientationDelegate>)vc device:[self getCurrentDevice]];
+  
+  NSString *imgName = [self getImageName:(id<CDVScreenOrientationDelegate>)vc device:[self getCurrentDevice]];
   UIImage *splash = [UIImage imageNamed:imgName];
   if (splash == NULL) {
     imageView = NULL;
@@ -75,90 +76,104 @@ static UIImageView *imageView;
   return device;
 }
 
-- (NSString*)getImageName:(UIInterfaceOrientation)currentOrientation delegate:(id<CDVScreenOrientationDelegate>)orientationDelegate device:(CDV_iOSDevice)device
+- (NSString*)getImageName:(id<CDVScreenOrientationDelegate>)orientationDelegate device:(CDV_iOSDevice)device
 {
-  // Use UILaunchImageFile if specified in plist.  Otherwise, use Default.
-  NSString* imageName = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"UILaunchImageFile"];
-  
-  NSUInteger supportedOrientations = [orientationDelegate supportedInterfaceOrientations];
-  
-  // Checks to see if the developer has locked the orientation to use only one of Portrait or Landscape
-  BOOL supportsLandscape = (supportedOrientations & UIInterfaceOrientationMaskLandscape);
-  BOOL supportsPortrait = (supportedOrientations & UIInterfaceOrientationMaskPortrait || supportedOrientations & UIInterfaceOrientationMaskPortraitUpsideDown);
-  // this means there are no mixed orientations in there
-  BOOL isOrientationLocked = !(supportsPortrait && supportsLandscape);
-  
-  if (imageName) {
-    imageName = [imageName stringByDeletingPathExtension];
-  } else {
-    imageName = @"Default";
-  }
-
-  // Add Asset Catalog specific prefixes
-  if ([imageName isEqualToString:@"LaunchImage"])
-  {
-    if(device.iPhone4 || device.iPhone5 || device.iPad) {
-        imageName = [imageName stringByAppendingString:@"-700"];
-    } else if(device.iPhone6) {
-        imageName = [imageName stringByAppendingString:@"-800"];
-    } else if(device.iPhone6Plus || device.iPhoneX) {
-        if(device.iPhone6Plus) {
-            imageName = [imageName stringByAppendingString:@"-800"];
-        } else {
-            imageName = [imageName stringByAppendingString:@"-1100"];
-        }
-        if (currentOrientation == UIDeviceOrientationPortrait || currentOrientation == UIDeviceOrientationPortraitUpsideDown) {
-            imageName = [imageName stringByAppendingString:@"-Portrait"];
-        }
+    
+    NSString* imageName;
+    
+    NSString* privacyImageNameKey = @"privacyimagename";
+    NSString* prefImageName = [self.commandDelegate.settings objectForKey:[privacyImageNameKey lowercaseString]];
+    imageName = prefImageName ? prefImageName : @"Default";
+    //Override Launch images?
+    NSString* privacyOverrideLaunchImage = @"privacyoverridelaunchimage";
+    if([self.commandDelegate.settings objectForKey:[privacyOverrideLaunchImage lowercaseString]] && [[self.commandDelegate.settings objectForKey:[privacyOverrideLaunchImage lowercaseString]] isEqualToString:@"true"])
+    {
+        
     }
-  }
-  
-  BOOL isLandscape = supportsLandscape &&
-  (currentOrientation == UIInterfaceOrientationLandscapeLeft || currentOrientation == UIInterfaceOrientationLandscapeRight);
-  
-  if (device.iPhone5) { // does not support landscape
-    imageName = isLandscape ? nil : [imageName stringByAppendingString:@"-568h"];
-  } else if (device.iPhone6) { // does not support landscape
-    imageName = isLandscape ? nil : [imageName stringByAppendingString:@"-667h"];
-  } else if (device.iPhone6Plus || device.iPhoneX) { // supports landscape
-    if (isOrientationLocked) {
-      imageName = [imageName stringByAppendingString:(supportsLandscape ? @"-Landscape" : @"")];
-    } else {
-      switch (currentOrientation) {
-        case UIInterfaceOrientationLandscapeLeft:
-        case UIInterfaceOrientationLandscapeRight:
-          imageName = [imageName stringByAppendingString:@"-Landscape"];
-          break;
-        default:
-          break;
-      }
-    }
-    if (device.iPhoneX) {
-        imageName = [imageName stringByAppendingString:@"-2436h"];
-    } else {
-        imageName = [imageName stringByAppendingString:@"-736h"];
+    else
+    {
+        // Use UILaunchImageFile if specified in plist.  Otherwise, use Default.
+        imageName = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"UILaunchImageFile"];
+        imageName = [imageName stringByDeletingPathExtension];
     }
     
-  } else if (device.iPad) { // supports landscape
-    if (isOrientationLocked) {
-      imageName = [imageName stringByAppendingString:(supportsLandscape ? @"-Landscape" : @"-Portrait")];
-    } else {
-      switch (currentOrientation) {
-        case UIInterfaceOrientationLandscapeLeft:
-        case UIInterfaceOrientationLandscapeRight:
-          imageName = [imageName stringByAppendingString:@"-Landscape"];
-          break;
-          
-        case UIInterfaceOrientationPortrait:
-        case UIInterfaceOrientationPortraitUpsideDown:
-        default:
-          imageName = [imageName stringByAppendingString:@"-Portrait"];
-          break;
-      }
+    NSUInteger supportedOrientations = [orientationDelegate supportedInterfaceOrientations];
+    
+    // Checks to see if the developer has locked the orientation to use only one of Portrait or Landscape
+    BOOL supportsLandscape = (supportedOrientations & UIInterfaceOrientationMaskLandscape);
+    BOOL supportsPortrait = (supportedOrientations & UIInterfaceOrientationMaskPortrait || supportedOrientations & UIInterfaceOrientationMaskPortraitUpsideDown);
+    // this means there are no mixed orientations in there
+    BOOL isOrientationLocked = !(supportsPortrait && supportsLandscape);
+    
+    UIDeviceOrientation deviceOrientation = [UIDevice currentDevice].orientation;
+    // Add Asset Catalog specific prefixes
+    if ([imageName isEqualToString:@"LaunchImage"])
+    {
+        if(device.iPhone4 || device.iPhone5 || device.iPad) {
+            imageName = [imageName stringByAppendingString:@"-700"];
+        } else if(device.iPhone6) {
+            imageName = [imageName stringByAppendingString:@"-800"];
+        } else if(device.iPhone6Plus || device.iPhoneX) {
+            if(device.iPhone6Plus) {
+                imageName = [imageName stringByAppendingString:@"-800"];
+            } else {
+                imageName = [imageName stringByAppendingString:@"-1100"];
+            }
+            if (deviceOrientation == UIDeviceOrientationPortrait || deviceOrientation == UIDeviceOrientationPortraitUpsideDown) {
+                imageName = [imageName stringByAppendingString:@"-Portrait"];
+            }
+        }
     }
-  }
-  
-  return imageName;
+    
+    BOOL isLandscape = supportsLandscape &&
+    (deviceOrientation == UIDeviceOrientationLandscapeLeft || deviceOrientation == UIDeviceOrientationLandscapeRight);
+    
+    if (device.iPhone4) { // does not support landscape
+        imageName = isLandscape ? nil : [imageName stringByAppendingString:@"-480h"];
+    } else if (device.iPhone5) { // does not support landscape
+        imageName = isLandscape ? nil : [imageName stringByAppendingString:@"-568h"];
+    } else if (device.iPhone6) { // does not support landscape
+        imageName = isLandscape ? nil : [imageName stringByAppendingString:@"-667h"];
+    } else if (device.iPhone6Plus || device.iPhoneX)
+    { // supports landscape
+        if (isOrientationLocked) {
+            imageName = [imageName stringByAppendingString:(supportsLandscape ? @"-Landscape" : @"")];
+        } else {
+            switch (deviceOrientation) {
+                case UIInterfaceOrientationLandscapeLeft:
+                case UIInterfaceOrientationLandscapeRight:
+                    imageName = [imageName stringByAppendingString:@"-Landscape"];
+                    break;
+                default:
+                    break;
+            }
+        }
+        if (device.iPhoneX) {
+            imageName = [imageName stringByAppendingString:@"-2436h"];
+        } else {
+            imageName = [imageName stringByAppendingString:@"-736h"];
+        }
+        
+    } else if (device.iPad) { // supports landscape
+        if (isOrientationLocked) {
+            imageName = [imageName stringByAppendingString:(supportsLandscape ? @"-Landscape" : @"-Portrait")];
+        } else {
+            switch (deviceOrientation) {
+                case UIInterfaceOrientationLandscapeLeft:
+                case UIInterfaceOrientationLandscapeRight:
+                    imageName = [imageName stringByAppendingString:@"-Landscape"];
+                    break;
+                    
+                case UIInterfaceOrientationPortrait:
+                case UIInterfaceOrientationPortraitUpsideDown:
+                default:
+                    imageName = [imageName stringByAppendingString:@"-Portrait"];
+                    break;
+            }
+        }
+    }
+
+    return imageName;
 }
 
 @end
