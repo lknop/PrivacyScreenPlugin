@@ -22,7 +22,7 @@ static UIImageView *imageView;
 - (void)onAppDidBecomeActive:(UIApplication *)application
 {
   if (imageView == NULL) {
-    self.viewController.view.window.hidden = NO;
+    // self.viewController.view.window.hidden = NO;
   } else {
     [imageView removeFromSuperview];
   }
@@ -35,8 +35,8 @@ static UIImageView *imageView;
   NSString *imgName = [self getImageName:(id<CDVScreenOrientationDelegate>)vc device:[self getCurrentDevice]];
   UIImage *splash = [UIImage imageNamed:imgName];
   if (splash == NULL) {
-    imageView = NULL;
-    self.viewController.view.window.hidden = YES;
+    // imageView = NULL;
+    // self.viewController.view.window.hidden = YES;
   } else {
     imageView = [[UIImageView alloc]initWithFrame:[self.viewController.view bounds]];
     [imageView setImage:splash];
