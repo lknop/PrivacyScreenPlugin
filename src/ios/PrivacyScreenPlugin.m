@@ -12,32 +12,27 @@ static UIImageView *imageView;
 
 - (void)pluginInitialize
 {
-  [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(onAppDidBecomeActive:)
-                                               name:UIApplicationDidBecomeActiveNotification object:nil];
+//   [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(onAppDidBecomeActive:)
+//                                                name:UIApplicationDidBecomeActiveNotification object:nil];
 
-  [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(onAppWillResignActive:)
-                                               name:UIApplicationWillResignActiveNotification object:nil];
+//   [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(onAppWillResignActive:)
+//                                                name:UIApplicationWillResignActiveNotification object:nil];
 }
 
-- (void)onAppDidBecomeActive:(UIApplication *)application
+- (void) hidePrivacyScreen:(CDVInvokedUrlCommand*)command
 {
-  if (imageView == NULL) {
-    // self.viewController.view.window.hidden = NO;
-  } else {
+  if (imageView != NULL) {
     [imageView removeFromSuperview];
   }
 }
 
-- (void)onAppWillResignActive:(UIApplication *)application
+- (void) showPrivacyScreen:(CDVInvokedUrlCommand*)command
 {
   CDVViewController *vc = (CDVViewController*)self.viewController;
   
   NSString *imgName = [self getImageName:(id<CDVScreenOrientationDelegate>)vc device:[self getCurrentDevice]];
   UIImage *splash = [UIImage imageNamed:imgName];
-  if (splash == NULL) {
-    // imageView = NULL;
-    // self.viewController.view.window.hidden = YES;
-  } else {
+  if (splash != NULL) {
     imageView = [[UIImageView alloc]initWithFrame:[self.viewController.view bounds]];
     [imageView setImage:splash];
     
